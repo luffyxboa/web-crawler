@@ -30,6 +30,12 @@ app.add_middleware(
 # Store results in memory temporarily for download (In production, use a DB)
 last_search_results: List[Company] = []
 
+@app.get("/")
+async def health_check():
+    """Health check endpoint for Railway"""
+    return {"status": "ok", "message": "Web Crawler API is running"}
+
+
 @app.post("/search")
 async def search_endpoint(request: SearchRequest):
     """

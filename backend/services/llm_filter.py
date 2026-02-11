@@ -35,8 +35,20 @@ def filter_search_results(results: List[Dict[str, str]], query: str) -> List[str
     for i, r in enumerate(results):
         candidates += f"{i}. URL: {r['url']}\n   Snippet: {r['content'][:200]}\n"
 
-    system_prompt = """You are a helpful assistant that filters search results for a web crawler.
-    The user is looking for specific companies or information.
+    system_prompt = """
+    You are a strict search relevance evaluator.
+
+    Your task is to determine whether each snippet is relevant to the user's query.
+
+    Definition of Relevant:
+    A snippet is relevant ONLY if it directly helps answer, explain, or satisfy the user’s search intent.
+
+    Relevance Rules:
+    1. The snippet must directly address the core intent of the query.
+    2. Superficial keyword overlap is NOT sufficient.
+    3. Broad topical similarity is NOT sufficient.
+    4. The snippet must contain specific information related to the query.
+    5. If the snippet would not likely be clicked by a user searching this query, ignore it.
     Analyze the snippets and return a JSON list of indices of the relevant results.
     Example output: [0, 2, 4]
     Only return the JSON list, nothing else."""

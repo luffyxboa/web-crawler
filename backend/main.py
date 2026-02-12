@@ -43,17 +43,19 @@ async def search_endpoint(request: SearchRequest):
     Streams events: "status", "url_found", "company_extracted", "done".
     """
     query = request.query
+    country = request.country
     
     async def event_generator():
         global last_search_results
         last_search_results = []
         
         # 1. Search
-        yield f"data: {json.dumps({'type': 'status', 'message': f'Searching for: {query}'})}\n\n"
+        # Build search query with country if provided
+        search_query = f"{query} {country}" if country else query
+        yield f"data: {json.dumps({'type': 'status', 'message': f'Searching for: {search_query}'})}\n\n"
         
         # Run SearxNG in a thread pool (since requests is blocking)
-        # Run SearxNG in a thread pool (since requests is blocking)
-        search_results = await asyncio.to_thread(search_google, query, request.limit)
+        search_results = await asyncio.to_thread(search_google, search_query, request.limit)
         
         if not search_results:
             yield f"data: {json.dumps({'type': 'status', 'message': 'No URLs found from search'})}\n\n"
@@ -64,7 +66,7 @@ async def search_endpoint(request: SearchRequest):
         
         # Filter with LLM
         from services.llm_filter import filter_search_results
-        urls = await asyncio.to_thread(filter_search_results, search_results, query)
+        urls = await asyncio.to_thread(filter_search_results, search_results, search_query)
         
         yield f"data: {json.dumps({'type': 'status', 'message': f'LLM selected {len(urls)} relevant URLs. Starting crawl...'})}\n\n"
         
@@ -74,7 +76,7 @@ async def search_endpoint(request: SearchRequest):
             
             # Check Relevance & Extract
             try:
-                companies = await asyncio.to_thread(process_url_flow, url, query)
+                companies = await asyncio.to_thread(process_url_flow, url, search_query)
                 
                 if companies:
                      yield f"data: {json.dumps({'type': 'status', 'message': f'Found {len(companies)} companies on {url}'})}\n\n"

@@ -3,7 +3,6 @@ import json
 import time
 from typing import List, Dict, Any, Optional
 from models import Company
-from services.local_extractor import check_relevance_local, extract_companies_local  # Import local logic
 
 CRAWL4AI_URL = "https://crawle.up.railway.app/crawl"
 

@@ -79,48 +79,70 @@ def extract_data_with_llm(content_markdown: str, html_content: str, query: str) 
     # 2. Prepare Interactive Elements (HTML for Pagination)
     interactive_html = extract_interactive_elements(html_content)
     
-    system_prompt = """You are an intelligent web scraper specialized in extracting SUPPLIER/MANUFACTURER company information.
-    Your goal is to extract ONLY legitimate business suppliers, manufacturers, or service providers that match the user's query.
+    system_prompt = """You are an expert web scraper extracting SUPPLIER/MANUFACTURER company information from directories, B2B platforms, and listing pages.
     
-    Task 1: Extract Companies (Use the Markdown Content)
-    Extract fields: name, website, description, email, phone, address.
+    YOUR PRIMARY TASK: Extract ALL legitimate businesses from the content that match the user's query.
     
-    STRICT FILTERING RULES - DO NOT EXTRACT:
-    ❌ Buyer requests or "wanted" posts (e.g., "I want supply of...", "Anyone selling...", "Looking for suppliers...")
-    ❌ Error pages (Cloudflare, 404, 403, "Access Denied", "Page Not Found")
-    ❌ Navigation or generic pages ("About Us", "Contact Us", "Home", "Login", "Sign Up")
-    ❌ Generic page titles or website names without actual company details
-    ❌ Forum posts, Q&A requests, or discussion threads
-    ❌ Trade show announcements or event listings (UNLESS they list exhibitor companies with contact details)
-    ❌ News articles or blog posts (UNLESS they contain a company directory/listing)
-    ❌ Social media posts or personal profiles
-    ❌ Government websites, policy pages, or regulation documents
+    HOW TO IDENTIFY COMPANIES IN LISTINGS:
     
-    ONLY EXTRACT IF:
-    ✅ The content clearly describes a business that SUPPLIES/MANUFACTURES/DISTRIBUTES products or services
-    ✅ The company has identifiable contact information (website, email, phone, or address)
-    ✅ The company name is a proper business name, not a page title or generic phrase
-    ✅ The content is from a business directory, B2B platform, or company profile page
+    1. BUSINESS DIRECTORIES & B2B PLATFORMS:
+       - Look for structured lists, tables, or repeated patterns of company information
+       - Each entry typically has: company name, and MAY have contact details (website, email, phone, address)
+       - Extract EVERY company entry you find, even if contact info is incomplete
+       - Common patterns: "Company Name | City | Product" or table rows with company details
     
-    VALIDATION:
-    - If the "name" field sounds like a request, question, or generic page title → DO NOT INCLUDE IT
-    - If there's no contact information (no website, email, phone, or address) → DO NOT INCLUDE IT
-    - If it's clearly a buyer looking for suppliers → DO NOT INCLUDE IT
-    - If the page is an error or navigation page → Return empty companies array
+    2. COMPANY PROFILE PAGES:
+       - Extract the main company's information
+       - Include all available contact details
     
-    Task 2: Identify Pagination (Use the HTML Snippets)
+    3. WHAT TO EXTRACT:
+       For each company found:
+       - "name": Official business/company name (NOT page titles like "Home" or "About Us")
+       - "website": Company website URL (if available)
+       - "email": Contact email (if available)
+       - "phone": Phone number (if available)
+       - "address": Physical address or location (city/country at minimum if available)
+       - "description": Brief description of products/services (if available)
+       
+       NOTE: It's OK if some fields are null/empty. Extract the company if you have at least the name and it's clearly a business.
+    
+    DO NOT EXTRACT (Critical - these are NOT companies):
+    ❌ BUYER REQUESTS: Posts asking for suppliers (e.g., "I want supply of...", "Anyone selling...", "Looking for...")
+    ❌ ERROR PAGES: Cloudflare errors, 404, 403, "Access Denied", "Page Not Found"
+    ❌ NAVIGATION: "About Us", "Contact Us", "Home", "Login", "Sign Up" (unless these are actual company names in a listing)
+    ❌ FORUM QUESTIONS: Q&A posts, discussion threads asking for recommendations
+    ❌ PAGE METADATA: Generic website names, categories, or section headings used as company names
+    
+    VALIDATION CHECKLIST:
+    ✓ Is this a real business name? (Not a page title, not a question, not a request)
+    ✓ Does it supply/manufacture/distribute products or services?
+    ✓ If it's from a listing/directory, extract it even with minimal details
+    ✓ Skip if it's clearly a buyer looking for suppliers
+    ✓ Skip if it's an error page or navigation element
+    
+    EXAMPLES OF WHAT TO EXTRACT:
+    ✅ "ABC Cosmetics Ltd - Kathmandu - info@abc.com.np - +977-1-4567890"
+    ✅ "XYZ Trading Company" (even without contact info, if from a business directory)
+    ✅ Table rows listing: Company Name | Location | Product Category
+    ✅ Company cards/listings with partial information
+    
+    EXAMPLES OF WHAT NOT TO EXTRACT:
+    ❌ "I need cosmetics suppliers in Nepal" (buyer request)
+    ❌ "Cloudflare" (error page)
+    ❌ "Home" or "About Us" (navigation)
+    ❌ "Looking for manufacturers" (question/request)
+    
+    Task 2: Identify Pagination
     Look for 'Next', '>', 'Load More', or page numbers in the HTML snippets.
-    - 'next_page_url': URL from href.
-    - 'pagination_selector': precise CSS selector for the button/link (e.g. 'a.next-page', 'button#load-more').
+    - 'next_page_url': URL from href
+    - 'pagination_selector': CSS selector (e.g. 'a.next-page')
     
     Return JSON:
     {
-        "companies": [...],
+        "companies": [...],  // Extract ALL legitimate businesses found
         "next_page_url": "...",
         "pagination_selector": "..."
     }
-    
-    IMPORTANT: It's better to return an empty companies array than to include irrelevant or invalid entries.
     """
     
     user_prompt = f"""User Query: {query}

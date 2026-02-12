@@ -23,7 +23,14 @@ function App() {
   const [limit, setLimit] = useState(10)
 
   const handleSearch = async () => {
-    if (!query) return;
+    if (!query) {
+      alert('Please enter a search query');
+      return;
+    }
+    if (!country) {
+      alert('Please enter a country');
+      return;
+    }
     setIsSearching(true)
     setResults([])
     setLogs([]) // Clear previous logs
@@ -33,7 +40,7 @@ function App() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query, limit, country: country || null }),
+      body: JSON.stringify({ query, limit, country }),
     });
 
     const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -73,7 +80,7 @@ function App() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ companies: results, country: country || null }),
+      body: JSON.stringify({ companies: results, country }),
     });
 
     const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -122,9 +129,10 @@ function App() {
           type="text"
           value={country}
           onChange={(e) => setCountry(e.target.value)}
-          placeholder="Country (optional)"
+          placeholder="Country"
           style={{ width: '150px', marginLeft: '10px' }}
           disabled={isSearching}
+          required
         />
         <input
           type="number"

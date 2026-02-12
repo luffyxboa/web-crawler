@@ -4,6 +4,7 @@ from typing import List, Optional
 class SearchRequest(BaseModel):
     query: str
     limit: int = 10
+    country: Optional[str] = None  # Optional country filter for more targeted searches
 
 class Company(BaseModel):
     name: str
@@ -23,3 +24,7 @@ class CrawlStatus(BaseModel):
 class SearchResponse(BaseModel):
     results: List[Company]
     total_companies: int
+
+class EnrichRequest(BaseModel):
+    companies: List[dict]  # List of company dicts from frontend
+    country: Optional[str] = None  # Optional country for more targeted enrichment

@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 
-from models import SearchRequest, Company
+from models import SearchRequest, Company, EnrichRequest
 from services.searxng import search_google
 from services.crawler import process_url_flow
 
@@ -112,8 +112,6 @@ def download_results(format: str):
     
     return {"error": "Invalid format"}
 
-class EnrichRequest(BaseModel):
-    companies: List[dict]  # List of company dicts from frontend
 
 @app.post("/enrich")
 async def enrich_endpoint(request: EnrichRequest):
@@ -142,8 +140,11 @@ async def enrich_endpoint(request: EnrichRequest):
         for idx, company in enumerate(unique_companies):
             yield f"data: {json.dumps({'type': 'status', 'message': f'Enriching {idx+1}/{len(unique_companies)}: {company.name}'})}\\n\\n"
             
-            # Search for company contact info (not just name)
-            search_query = f"{company.name} contact information"
+            # Search for company contact info (including country if provided)
+            if request.country:
+                search_query = f"{company.name} {request.country} contact information"
+            else:
+                search_query = f"{company.name} contact information"
             search_results = await asyncio.to_thread(search_google, search_query, 40)
             snippets = [result.get("content", "") for result in search_results if result.get("content")]
             

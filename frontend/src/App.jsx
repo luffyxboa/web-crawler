@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 function App() {
   const [query, setQuery] = useState('')
+  const [country, setCountry] = useState('')
   const [results, setResults] = useState([])
   const [logs, setLogs] = useState([])
   const [isSearching, setIsSearching] = useState(false)
@@ -32,7 +33,7 @@ function App() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query, limit }),
+      body: JSON.stringify({ query, limit, country: country || null }),
     });
 
     const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -72,7 +73,7 @@ function App() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ companies: results }),
+      body: JSON.stringify({ companies: results, country: country || null }),
     });
 
     const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -115,6 +116,14 @@ function App() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Enter search query (e.g. AI startups in SF)"
+          disabled={isSearching}
+        />
+        <input
+          type="text"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          placeholder="Country (optional)"
+          style={{ width: '150px', marginLeft: '10px' }}
           disabled={isSearching}
         />
         <input

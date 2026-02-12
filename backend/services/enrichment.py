@@ -84,12 +84,16 @@ Extract and return the contact details in JSON format."""
         print(f"LLM Enrichment Error for {company_name}: {e}")
         return {}
 
-def enrich_companies(companies: List[Company]) -> List[Company]:
+def enrich_companies(companies: List[Company], country: str = None) -> List[Company]:
     """
     Main enrichment pipeline:
     1. Deduplicate by name
     2. For each unique company, search for additional info (40 results)
     3. Use LLM to enrich contact details
+    
+    Args:
+        companies: List of Company objects to enrich
+        country: Optional country name to include in search query for more targeted results
     """
     # Step 1: Deduplicate
     unique_companies = deduplicate_by_name(companies)
@@ -100,8 +104,11 @@ def enrich_companies(companies: List[Company]) -> List[Company]:
     for idx, company in enumerate(unique_companies):
         print(f"Enriching {idx+1}/{len(unique_companies)}: {company.name}")
         
-        # Search for company contact info (not just name)
-        search_query = f"{company.name} contact information"
+        # Search for company contact info (including country if provided)
+        if country:
+            search_query = f"{company.name} {country} contact information"
+        else:
+            search_query = f"{company.name} contact information"
         search_results = search_google(search_query, limit=20)
         snippets = [result.get("content", "") for result in search_results if result.get("content")]
         
